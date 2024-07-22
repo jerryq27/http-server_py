@@ -5,24 +5,35 @@ import socket
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     # print("Logs from your program will appear here!")
-        
+    CRLF = '\r\n' # CarriageReturnLineFeed
+
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
     connection, address = server_socket.accept() # wait for client
 
-    data = connection.recv(1024)
-    data = data.decode() # Default decoding is utf-8
+    data = connection.recv(1024).decode() # Default decoding is utf-8
 
-    request = data.split('\r\n')
+    request = data.split(CRLF)
     request_line = request[0]
 
     method, target, version = request_line.split(' ')
 
-    if target != '/':
-        response = b'HTTP/1.1 404 Not Found\r\n\r\n'
-    else:
+    if target == '/':
         response = b'HTTP/1.1 200 OK\r\n\r\n'
+    elif '/echo' in target:
+        echo_str = target[6:]
+
+        response = CRLF.join([
+            'HTTP/1.1 200 OK',
+            'Content-Type: text/plain',
+            f'Content-Length: {len(echo_str)}',
+            f'{CRLF}{echo_str}',
+        ])
+        response = response.encode()
+    else:
+        response = b'HTTP/1.1 404 Not Found\r\n\r\n'
 
     connection.sendall(response)
+    connection.close()
 
 
 if __name__ == "__main__":
