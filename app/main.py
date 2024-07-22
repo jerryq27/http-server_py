@@ -1,15 +1,11 @@
 # Uncomment this to pass the first stage
 import socket
+import threading
 
 
-def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    # print("Logs from your program will appear here!")
-    CRLF = '\r\n' # CarriageReturnLineFeed
+CRLF = '\r\n' # CarriageReturnLineFeed
 
-    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    connection, address = server_socket.accept() # wait for client
-
+def handle_request(connection, address):
     data = connection.recv(1024).decode() # Default decoding is utf-8
 
     request = data.split(CRLF)
@@ -45,6 +41,17 @@ def main():
 
     connection.sendall(response)
     connection.close()
+
+
+def main():
+    # You can use print statements as follows for debugging, they'll be visible when running tests.
+    # print("Logs from your program will appear here!")
+
+    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
+
+    while True:
+        connection, address = server_socket.accept() # wait for client
+        threading.Thread(target=handle_request, args=(connection, address), daemon=True).start()
 
 
 if __name__ == "__main__":
