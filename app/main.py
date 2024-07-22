@@ -29,6 +29,17 @@ def main():
             f'{CRLF}{echo_str}',
         ])
         response = response.encode()
+    elif '/user-agent' in target:
+        for header in request:
+            if header.startswith('User-Agent:'):
+                user_agent = header.split(' ')[1]
+                response = CRLF.join([
+                    'HTTP/1.1 200 OK',
+                    'Content-Type: text/plain',
+                    f'Content-Length: {len(user_agent)}',
+                    f'{CRLF}{user_agent}',
+                ])
+                response = response.encode()
     else:
         response = b'HTTP/1.1 404 Not Found\r\n\r\n'
 
