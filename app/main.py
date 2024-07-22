@@ -31,7 +31,7 @@ def main():
         response = response.encode()
     elif '/user-agent' in target:
         for header in request:
-            if header.startswith('User-Agent:'):
+            if header.lower().startswith('user-agent:'):
                 user_agent = header.split(' ')[1]
                 response = CRLF.join([
                     'HTTP/1.1 200 OK',
