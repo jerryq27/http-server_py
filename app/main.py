@@ -1,4 +1,6 @@
 # Uncomment this to pass the first stage
+import os
+import sys
 import socket
 import threading
 
@@ -36,6 +38,24 @@ def handle_request(connection, address):
                     f'{CRLF}{user_agent}',
                 ])
                 response = response.encode()
+    elif '/files' in target:
+        program_name, arg_label, directory = sys.argv
+        file_name = target[7:]
+
+        file = os.path.join(directory, file_name)
+
+        if os.path.isfile(file):
+            with open(file, 'r') as requested_file:
+                contents = requested_file.read()
+            response = CRLF.join([
+                'HTTP/1.1 200 OK',
+                'Content-Type: application/octet-stream',
+                f'Content-Length: {len(contents)}',
+                f'{CRLF}{contents}'
+            ])
+            response = response.encode()
+        else:
+            response = b'HTTP/1.1 404 Not Found\r\n\r\n'
     else:
         response = b'HTTP/1.1 404 Not Found\r\n\r\n'
 
