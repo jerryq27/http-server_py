@@ -41,15 +41,20 @@ def do_get(header, body):
         echo_str = target[6:]
 
         # Check for compression header
+        compression_argument = None
         for header_line in header_lines:
             if header_line.lower().startswith('accept-encoding:'):
-                _, compression = header_line.split()
-            else:
-                compression = None
-        
-        if compression != None and compression not in VALID_COMPRESSION_SCHEMES:
-            compression = None
-        
+                _, compression_argument = header_line.split(': ')
+                break
+
+        if compression_argument != None:
+            schemes = compression_argument.split(', ')
+            schemes = [x for x in schemes if x in VALID_COMPRESSION_SCHEMES]
+            compression_argument = ', '.join(schemes)
+
+            if compression_argument == '':
+                compression_argument = None
+
         response_lines = [
             'HTTP/1.1 200 OK',
             'Content-Type: text/plain',
@@ -57,8 +62,8 @@ def do_get(header, body):
             f'{CRLF}{echo_str}',
         ]
 
-        if compression != None:
-            response_lines = response_lines[:1] + ['Content-Encoding: gzip'] + response_lines[1:]
+        if compression_argument != None:
+            response_lines = response_lines[:1] + [f'Content-Encoding: {compression_argument}'] + response_lines[1:]
 
         response = CRLF.join(response_lines)
         response = response.encode()
