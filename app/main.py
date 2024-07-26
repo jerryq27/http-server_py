@@ -1,4 +1,3 @@
-# Uncomment this to pass the first stage
 import os
 import sys
 import socket
@@ -6,6 +5,7 @@ import threading
 
 
 CRLF = '\r\n' # CarriageReturnLineFeed
+VALID_COMPRESSION_SCHEMES = ['gzip']
 
 def handle_request(connection, address):
     data = connection.recv(1024).decode() # Default decoding is utf-8
@@ -40,17 +40,32 @@ def do_get(header, body):
     elif '/echo' in target:
         echo_str = target[6:]
 
-        response = CRLF.join([
+        # Check for compression header
+        for header_line in header_lines:
+            if header_line.lower().startswith('accept-encoding:'):
+                _, compression = header_line.split()
+            else:
+                compression = None
+        
+        if compression != None and compression not in VALID_COMPRESSION_SCHEMES:
+            compression = None
+        
+        response_lines = [
             'HTTP/1.1 200 OK',
             'Content-Type: text/plain',
             f'Content-Length: {len(echo_str)}',
             f'{CRLF}{echo_str}',
-        ])
+        ]
+
+        if compression != None:
+            response_lines = response_lines[:1] + ['Content-Encoding: gzip'] + response_lines[1:]
+
+        response = CRLF.join(response_lines)
         response = response.encode()
     elif '/user-agent' in target:
         for header_line in header_lines:
             if header_line.lower().startswith('user-agent:'):
-                user_agent = header_line.split(' ')[1]
+                _, user_agent = header_line.split()
                 response = CRLF.join([
                     'HTTP/1.1 200 OK',
                     'Content-Type: text/plain',
@@ -101,9 +116,6 @@ def do_post(header, body):
     return response
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    # print("Logs from your program will appear here!")
-
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
 
     while True:
