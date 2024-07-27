@@ -1,5 +1,6 @@
 import os
 import sys
+import gzip
 import socket
 import threading
 
@@ -58,15 +59,23 @@ def do_get(header, body):
         response_lines = [
             'HTTP/1.1 200 OK',
             'Content-Type: text/plain',
-            f'Content-Length: {len(echo_str)}',
-            f'{CRLF}{echo_str}',
         ]
 
         if compression_argument != None:
-            response_lines = response_lines[:1] + [f'Content-Encoding: {compression_argument}'] + response_lines[1:]
-
+            response_lines.append(f'Content-Encoding: {compression_argument}')
+        
         response = CRLF.join(response_lines)
         response = response.encode()
+
+        if compression_argument != None:
+            compressed_echo_str_bytes = gzip.compress(echo_str.encode())
+
+            response += f'{CRLF}Content-Length: {len(compressed_echo_str_bytes)}{CRLF*2}'.encode()
+            response += compressed_echo_str_bytes
+        else:
+            response += f'{CRLF}Content-Length: {len(echo_str)}{CRLF*2}'.encode()
+            response += echo_str.encode()
+
     elif '/user-agent' in target:
         for header_line in header_lines:
             if header_line.lower().startswith('user-agent:'):
